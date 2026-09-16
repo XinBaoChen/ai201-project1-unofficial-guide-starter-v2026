@@ -24,8 +24,13 @@
 <!-- Three or four sentences. Which corpus you picked, and the kinds of
      questions your system answers. Write it for someone who has never seen
      this repo.
+ Milestone 5. -->
 
-     Milestone 5. -->
+
+I picked the `city_guides` corpus: fourteen long travel guides to a fictional region — nine on individual towns and villages (Brightwater, Halden Bay, Kestrelford, Corry Vale and others), plus five that cut across all of them on eating, walking, transport, seasons and accessibility. My system answers practical trip-planning questions: how to reach a town, how to get around once you're there, where to eat and when kitchens stop serving, and which month to visit. I love trying new food wherever I travel, so a corpus built around where to eat and how to get there was the obvious one for me to learn on.
+
+
+
 
 ## Chunking Strategy
 
