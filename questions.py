@@ -23,11 +23,14 @@ names a target of "4 of 5", and four of three is not a thing.
 
 QUESTIONS = [
     # {"question": "...", "expects": "..."},
-    {"question": "What time does the local bus service at Brightwater stop? ", "expects": "Stops at 7PM it also closes entirely on Sundays."},
-    {"question": "What time does the local restaurant at Brightwater  / kitchen closes?", "expects": "Most kitchens in town stop serving at 9pm, earlier than visitors expect, and on Sundays many close entirely."},
-    {"question": "What are some good months to visit  Halden Bay?", "expects": "The best months to visit Halden Bay are June, and September, when the weather is pleasant and the town is less crowded."},
-    {"question": "What is the population of Halden Bay?", "expects": "The population of Halden Bay is approximately 8,000 residents."},
-    {"question": "What is the nearest hospital to Halden Bay?", "expects": "The nearest hospital to Halden Bay is in Brightwater."},
+    # `expects` is a short literal phrase a correct answer has to contain, not a
+    # whole sentence — the scorer in unit 2 checks containment, and the model
+    # paraphrases, so a full sentence would never match.
+    {"question": "What time does the local bus service at Brightwater stop?", "expects": "7pm"},
+    {"question": "What time do kitchens in Brightwater stop serving?", "expects": "9pm"},
+    {"question": "What are some good months to visit Halden Bay?", "expects": "September"},
+    {"question": "What is the population of Halden Bay?", "expects": "8,000"},
+    {"question": "What is the nearest hospital to Halden Bay?", "expects": "Brightwater"},
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.

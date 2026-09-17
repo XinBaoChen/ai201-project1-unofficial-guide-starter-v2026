@@ -103,9 +103,19 @@ def _split_on_headings(text: str) -> tuple[str, list[str]]:
 
     # Split before any line that begins with "## ". The lookahead keeps the
     # heading attached to the section it introduces instead of discarding it.
-    parts = re.split(r"\n(?=## )", body)
+    parts = [p.strip() for p in re.split(r"\n(?=## )", body) if p.strip()]
 
-    return title, [p.strip() for p in parts if p.strip()]
+    # The text above the first heading is an intro paragraph with no heading of
+    # its own. Left alone it becomes a chunk that can't be attributed to a
+    # section — and in one case (guide_accessibility.md) a pure preamble that
+    # answers nothing. Dropping it isn't an option either: the populations of
+    # Brightwater and Halden Bay appear nowhere else in the corpus. So it gets
+    # merged into the first real section instead.
+    if len(parts) > 1 and not parts[0].startswith("## "):
+        intro = parts.pop(0)
+        parts[0] = f"{intro}\n\n{parts[0]}"
+
+    return title, parts
 
 
 def split_documents(documents: list[Document]) -> list[Chunk]:
@@ -137,6 +147,9 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
     Each chunk keeps the document's `# Title` line, because nine of the
     fourteen guides are towns using identical section names — a "When to go"
     paragraph on its own could belong to any of them.
+
+    The intro paragraph above the first heading is merged into the first
+    section rather than kept as a chunk of its own — see `_split_on_headings`.
     """
     chunks: list[Chunk] = []
 

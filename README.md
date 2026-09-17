@@ -1,6 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+XinBao Chen , I picked city_guides as my corpus.
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
@@ -34,18 +34,55 @@ I picked the `city_guides` corpus: fourteen long travel guides to a fictional re
 
 ## Chunking Strategy
 
-**Chunk size:**
-**Overlap:**
+**Chunk size:** No fixed number — one `##` section per chunk. In practice that
+comes out at 190 to 885 characters, 356 on average, across 84 chunks.
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
+**Overlap:** 0
 
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
+My documents are long sectioned guides, not short posts. Every guide is already
+divided into labelled sections — "Getting there", "Eat and drink", "When to go"
+— and when I read them in Milestone 1 I noticed that the answer to a question is
+almost always the whole paragraph under one of those headings, not a single
+sentence. So the section, not a character count, is the unit worth keeping
+whole. I split on any line starting with `## ` instead of picking a number.
 
-     Milestone 3. -->
+The starter's fixed 800-character windows showed me why that matters. Indexing
+with `fallback_split` gave me 51 chunks with the longest at exactly 800
+characters, which is the giveaway: it wasn't stopping where the text stopped, it
+was stopping where it ran out of room. One chunk ended mid-word on "The station
+is a 15-" and another on "bread made from the flour grou". It also left a
+24-character chunk behind — the leftover tail of a document that didn't divide
+evenly by 800. After switching to sections I get 84 chunks, longest 885, and
+that 885 is set by how long one real section happens to be rather than by a
+setting. 
+
+Overlap is 0 because overlap exists to repair sentences a splitter broke, and
+this one never breaks any.
+
+One thing I added that isn't about size: every chunk keeps the document's
+`# Title` line on top. Nine of my fourteen guides are towns using identical
+section names, and the "Practical notes" paragraph is word-for-word the same in
+all nine, so without the town name a chunk about Corry Vale is indistinguishable
+from one about Marchwood.
+
+**Where I changed my mind:** my first version split on headings and nothing
+else, which left ten chunks that were intro paragraphs with no `##` heading at
+all — the text sitting between a document's title and its first section. One of
+them (`guide_accessibility.md#0`) was pure preamble: it announced that the guide
+would be honest about difficult places and then stopped, so it could not answer
+anything on its own.
+
+My first instinct was to delete them by raising the minimum length from 60 to
+200 characters. I'm glad I checked first, because when I ran my population
+question the answer came back from `guide_halden_bay.md#0` — one of those intro
+chunks. "A working fishing port of 8,000" is in the intro and nowhere else in
+the corpus, and the same is true of Brightwater's 40,000. Raising the threshold
+would have deleted the chunk that answered my own test question.
+
+So instead of dropping the intros I merged each one into its document's first
+section. That took the count from 94 chunks to 84, removed all ten headless
+chunks, and lost nothing. It also pushed the longest chunk from 760 to 885
+characters, which I decided was an acceptable price for keeping the facts.
 
 ## Sample Chunks
 
@@ -58,7 +95,9 @@ I picked the `city_guides` corpus: fourteen long travel guides to a fictional re
 
      Milestone 3. -->
 
-**Chunk 1 mobility** — source: guide_accessibility.md#0   `` — produced by: chunker.py::split_documents ``
+All five printed by `python app.py chunks -n 5` after the intro-merge change.
+
+**Chunk 1 — mobility** — source: `guide_accessibility.md#0` — produced by: `chunker.py::split_documents`
 
 ```
 Getting around the region with limited mobility
@@ -66,90 +105,132 @@ Getting around the region with limited mobility
 An honest assessment rather than a promotional one. Some of these places are
 difficult and it is better to know in advance.
 
+## Straightforward
+
+**Thornby Wells** is the easiest town in the region. It is flat, compact, and
+everything is within three minutes of everything else. Parking is free for two
+hours anywhere in town and the station is central. The pump room and gardens
+are level throughout.
+
+**Marchwood** has a modern tram network with level boarding on all four lines,
+running every 8 minutes on weekdays. The city museum and covered market are both
+step-free. The distances between districts are the main consideration.
+
+**Brightwater** is level along the river and through the centre. The mill museum
+is step-free. The station is a 15-minute walk from campus on flat ground, or the
+shuttle meets the four busiest arrivals.
 ```
 
-**Chunk 2 Corry Vale** — source: guide_corry_vale.md#5 `` — produced by:  chunker.py::split_documents  ``
+This is the chunk that used to be the bare preamble. After the merge it carries
+three towns' worth of real detail, and it is also my longest chunk at 885
+characters — the cost of the change, visible in one place.
+
+**Chunk 2 — Corry Vale** — source: `guide_corry_vale.md#5` — produced by: `chunker.py::split_documents`
 
 ```
 Corry Vale
 
-## Where to stay
+## When to go
 
-Perhaps thirty beds in the entire valley, spread across two pubs and a handful of farmhouse rooms. In summer these are booked months ahead. Camping is permitted on two marked fields and nowhere else.
+May to September. Outside those months the pub in the third village closes, the farm shop reduces its hours, and several footpaths become genuinely boggy rather than merely wet. The road is not gritted above the second village and is impassable in snow.
 ```
 
-**Chunk 3 Givens Mill** — source: guide_givens_mill.md#2 `` — produced by: chunker.py::split_documents ``
+**Chunk 3 — Givens Mill** — source: `guide_givens_mill.md#2` — produced by: `chunker.py::split_documents`
 
 ```
 Givens Mill
 
-## Getting around
+## Eat and drink
 
-Everything is on one street along the river. The mill is at one end and the church at the other, eight minutes apart. The riverside path continues in both directions for as far as you want to walk.
+A tearoom attached to the mill, open 10 to 4 daily except Tuesdays, which sells bread made from the flour ground twenty metres away and is the reason most people come. One pub, food served lunchtimes and Thursday to Saturday evenings.
 ```
 
-**Chunk 4 Kestrelford** — source: guide_kestrelford.md#4  `` — produced by: chunker.py::split_documents ``
+**Chunk 4 — Kestrelford** — source: `guide_kestrelford.md#4` — produced by: `chunker.py::split_documents`
 
 ```
 Kestrelford
 
-## What to see
+## Where to stay
 
-The market square on a Saturday morning is the main event and has run continuously since the 1400s. The parish church has a 13th-century tower you can climb for £2. The old trackbed walk runs six miles to the next village along an easy gradient and is the best half-day here.
+Two inns on the square and a handful of rooms above the pubs. Booking ahead matters between May and September and not at all otherwise. There is no accommodation of any kind within four miles of the town in either direction.
 ```
 
-**Chunk 5 Pellew Sands** — source: guide_pellew_sands.md#6 `` — produced by: `split_documents`
+**Chunk 5 — Pellew Sands** — source: `guide_pellew_sands.md#6` — produced by: `chunker.py::split_documents`
 
 ```
 Pellew Sands
 
-## When to go
+## Practical notes
 
-June and September for the beach without the crowds. July and August are busy and the town is at its most itself, for better and worse. Winter is bleak, largely closed, and has a following among people who like that sort of thing.
+Cash is still useful at the market and in smaller places, though cards are
+accepted almost everywhere now. Mobile coverage is good in the centre and
+patchy on the outskirts. The nearest full hospital is in Brightwater; there is
+a minor injuries unit locally with limited hours.
 ```
+
+Chunk 5 is the paragraph that is word-for-word identical in all nine town
+guides. The only thing telling it apart from the other eight is the `Pellew
+Sands` line my chunker puts on top, which is what criterion 5 is testing.
 
 ## Sample Answer
 
 <!-- One complete question and answer, pasted as text, with the source line
      visible. Milestone 4. -->
 
-**Question:**
-
-Question: What is the population of Halden Bay?
+**Question:** What is the population of Halden Bay?
 
 **Answer:**
 
 ```
-(best distance 0.379, cutoff 0.6)
+  (best distance 0.386, cutoff 0.6)
 
-The population of Halden Bay is 8,000 (source: guide_halden_bay.md).
+The population of Halden Bay is 8,000 (from guide_halden_bay.md).
 
 Sources retrieved: guide_halden_bay.md
 ```
 
+Produced by `python app.py ask "What is the population of Halden Bay?"` with the
+response cache off. The gate line shows it passed at 0.386 against the 0.6
+cutoff, and the answer names its file. The figure is correct — `guide_halden_bay.md`
+opens with "a working fishing port of 8,000" — and it comes from the intro
+paragraph, which is the chunk my first chunker would have thrown away.
+
 **My relevance cutoff:**
 
-in corpus:      0.167 - 0.379
-gap: 0.429 wide
-out of scope:   0.808 - 0.982
+**0.6** — the value `THRESHOLD` already had in `config.py`. I kept it, but I
+only know it is right because I measured, and I would have moved it if the
+numbers had said so.
 
-<!-- The number you set in config.py, and how you got there.
+The two groups came out cleanly separated, with no overlap at all:
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
+```
+in corpus       0.179 ─── 0.386
+                          gap: 0.428 wide
+out of scope                        0.814 ─── 0.992
+```
 
-     Milestone 4. -->
+The gap runs from 0.386 to 0.814 and its midpoint is 0.600, which is where the
+default already sat. Anything from roughly 0.45 to 0.75 would give the same
+verdict on all ten questions, so the cutoff has a wide margin on both sides
+rather than being balanced on an edge. I read that as the embeddings separating
+travel-guide language from everything else very easily — my out-of-scope
+questions are about Mongolia, diesel engines, the World Cup, ibuprofen and Rust,
+and none of them share real vocabulary with a guide about where to eat.
+
+All ten distances, from `python app.py retrieve "..."`:
 
 | Question | In corpus? | Best distance |
-| What time does the local bus service at Brightwater stop? |Yes | 0.281 |
-| What time does the local restaurant at Brightwater  / kitchen closes? |Yes | 0.337 |
-| What are some good months to visit  Halden Bay? |Yes | 0.179 |
-| What is the population of Halden Bay? |Yes | 0.379 |
-| What is the nearest hospital to Halden Bay? |Yes | 0.347 |
-| What is the capital of Mongolia?   |No | 0.808 |
-| Who is the best chest player?  |No | 0.898 |
+|---|---|---|
+| What time does the local bus service at Brightwater stop? | Yes | 0.281 |
+| What time do kitchens in Brightwater stop serving? | Yes | 0.343 |
+| What are some good months to visit Halden Bay? | Yes | 0.179 |
+| What is the population of Halden Bay? | Yes | 0.386 |
+| What is the nearest hospital to Halden Bay? | Yes | 0.347 |
+| What is the capital of Mongolia? | No | 0.848 |
+| How do I change the oil in a diesel engine? | No | 0.908 |
+| Who won the 1994 World Cup? | No | 0.992 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.818 |
+| How do I write a for loop in Rust? | No | 0.814 |
 
 ## How I Used AI
 
@@ -163,8 +244,10 @@ out of scope:   0.808 - 0.982
      Milestone 5. -->
 
 **1.**
+I asked Claude to help me justify criterion 3's target, and it pointed out that my five out-of-scope questions share no vocabulary at all with travel guides, so their distances should land well clear of the cutoff — I reworded that into my own explanation. When I later ran the criteria self-check past it, it told me not to change criterion 3 because there's nothing in it to interpret: the gate is a number comparison and the refusal is a fixed string. The one thing it flagged was that the word "clearly" only holds because my five out-of-scope questions are fixed, so I'm leaving them alone rather than swapping in borderline ones.
 
 **2.**
+I asked Claude to construct the chunking code from my notes, keeping the town name at the top and creating one chunk for each `##` part. It worked, but when I performed the "what question could this chunk answer" exercise on the output, I discovered ten chunks that were simply headless intro paragraphs, and one of them (`guide_accessibility.md#0`) was just a preamble with no answers in it. Claude's version had a 60-character minimum that was too low to catch them, and its suggestion was to either raise that to 200 or leave them and call it a known limitation. I didn't like either: raising it would have deleted `guide_halden_bay.md#0`, which is the only chunk holding the population figure one of my own test questions asks for. So I had it merge each intro into the document's first section instead. That took me from 94 chunks to 84, removed all ten headless chunks, and cost me nothing except a longer maximum chunk (760 to 885 characters). I re-indexed and re-measured my distances afterwards, which is why the numbers above differ from my first run.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
