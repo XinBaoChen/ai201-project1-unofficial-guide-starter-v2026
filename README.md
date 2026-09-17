@@ -115,12 +115,23 @@ June and September for the beach without the crowds. July and August are busy an
 
 **Question:**
 
+Question: What is the population of Halden Bay?
+
 **Answer:**
 
 ```
+(best distance 0.379, cutoff 0.6)
+
+The population of Halden Bay is 8,000 (source: guide_halden_bay.md).
+
+Sources retrieved: guide_halden_bay.md
 ```
 
 **My relevance cutoff:**
+
+in corpus:      0.167 - 0.379
+gap: 0.429 wide
+out of scope:   0.808 - 0.982
 
 <!-- The number you set in config.py, and how you got there.
 
@@ -132,8 +143,13 @@ June and September for the beach without the crowds. July and August are busy an
      Milestone 4. -->
 
 | Question | In corpus? | Best distance |
-|---|---|---|
-|  |  |  |
+| What time does the local bus service at Brightwater stop? |Yes | 0.281 |
+| What time does the local restaurant at Brightwater  / kitchen closes? |Yes | 0.337 |
+| What are some good months to visit  Halden Bay? |Yes | 0.179 |
+| What is the population of Halden Bay? |Yes | 0.379 |
+| What is the nearest hospital to Halden Bay? |Yes | 0.347 |
+| What is the capital of Mongolia?   |No | 0.808 |
+| Who is the best chest player?  |No | 0.898 |
 
 ## How I Used AI
 
