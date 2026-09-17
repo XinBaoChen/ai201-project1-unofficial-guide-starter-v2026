@@ -22,10 +22,16 @@ to it, write down what you saw, and move on. That's a real observation about
 your pipeline, not giving up.
 """
 
+import re
 from dataclasses import dataclass
 
 import config
 from ingest import Document
+
+# A section shorter than this is a heading with nothing useful under it. The
+# starter's chunker produced a 24-character chunk on this corpus; anything
+# that small can't answer a question but still competes for a retrieval slot.
+MIN_SECTION_CHARS = 60
 
 
 @dataclass
@@ -80,6 +86,28 @@ def fallback_split(
     return chunks
 
 
+def _split_on_headings(text: str) -> tuple[str, list[str]]:
+    """
+    Pull the `# Title` line off the top and split the rest on `## ` headings.
+
+    Returns the title (without its `#`) and a list of sections, each one still
+    carrying its own `## Heading` line.
+    """
+    title = ""
+    body = text
+
+    first_line, _, rest = text.partition("\n")
+    if first_line.startswith("# ") and not first_line.startswith("## "):
+        title = first_line[2:].strip()
+        body = rest
+
+    # Split before any line that begins with "## ". The lookahead keeps the
+    # heading attached to the section it introduces instead of discarding it.
+    parts = re.split(r"\n(?=## )", body)
+
+    return title, [p.strip() for p in parts if p.strip()]
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
     Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
@@ -96,8 +124,43 @@ def split_documents(documents: list[Document]) -> list[Chunk]:
       - Is the useful information in one sentence, or spread over a paragraph?
       - Would splitting on paragraph breaks keep more thoughts intact than
         splitting on a character count?
+
+    MY STRATEGY — one `##` section per chunk.
+
+    Every guide in city_guides is already divided into labelled sections
+    ("Getting there", "Eat and drink", "When to go"), and the answer to a
+    question is the paragraph under one of those headings. So the section, not
+    a character count, is the unit worth keeping whole. No overlap is needed:
+    overlap exists to repair sentences a splitter broke, and this one never
+    breaks any.
+
+    Each chunk keeps the document's `# Title` line, because nine of the
+    fourteen guides are towns using identical section names — a "When to go"
+    paragraph on its own could belong to any of them.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        title, sections = _split_on_headings(doc.text)
+
+        index = 0
+        for section in sections:
+            if len(section) < MIN_SECTION_CHARS:
+                continue  # a heading with nothing useful under it
+
+            text = f"{title}\n\n{section}" if title else section
+
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+            index += 1
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
