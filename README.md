@@ -274,17 +274,118 @@ I asked Claude to construct the chunking code from my notes, keeping the town na
 
      Milestone 1. -->
 
+Evidence: `results/run_2026-09-23_1439_before.md`, produced by
+`run_eval.py::main`. Three passes per question, caching off. `scorer.py` does
+not exist yet, so the per-question cells came out blank and I judged each
+criterion myself by reading the fifteen answers.
+
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunks hold one complete section | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Sources name the town I asked about | 2 of 3 | pass | pass | pass | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+Criteria 1, 3 and 4 give the same number in all three columns, and that is
+correct rather than lazy: retrieval is deterministic, the gate is a comparison
+against a fixed number, and chunking is a pure function of the documents.
+Criterion 2 is the one that could have moved between runs, because it depends
+on the model following an instruction — it didn't move.
+
+### Real output — criterion 1
+
+Every question's answer text appears in the chunks that came back. This is the
+clearest case, from `store.py::search` via `run_eval.py::main`:
+
+```
+### What is the population of Halden Bay? — run 1
+
+- Best distance: 0.3864 (passed the gate)
+- Sources retrieved: guide_halden_bay.md
+
+The population of Halden Bay is 8,000.
+
+Source: guide_halden_bay.md
+```
+
+`guide_halden_bay.md` opens with "a working fishing port of 8,000", so the
+retrieved chunk genuinely contained the answer rather than the model supplying
+it from elsewhere.
+
+### Real output — criterion 2
+
+All fifteen answers named a file. Three consecutive runs of the same question,
+showing the citation format drifting while the citation itself never
+disappeared — produced by `generate.py::answer_from_chunks`:
+
+```
+run 1: The local bus service at Brightwater runs until 7 pm and stops entirely on Sundays (guide_brightwater.md).
+
+run 2: The local bus service at Brightwater runs until 7pm and stops entirely on Sundays.
+
+       Source: guide_brightwater.md
+
+run 3: The local bus service at Brightwater runs until 7pm and stops entirely on Sundays (*guide_brightwater.md*).
+```
+
+Three different formats — inline parentheses, a separate Source line, and
+italics — for the same fact. Worth noting because a scorer that looks for one
+exact format would mark two of these wrong.
+
+### Real output — criterion 3
+
+Produced by `run_eval.py::check_out_of_scope` against `gate.py::check`, cutoff
+0.6. Refused 5 of 5, and no refused question reached the model:
+
+```
+| Out-of-scope question                                       | Best distance | Gate    |
+| What is the capital of Mongolia?                            | 0.848         | refused |
+| How do I change the oil in a diesel engine?                 | 0.908         | refused |
+| Who won the 1994 World Cup?                                 | 0.992         | refused |
+| What is the recommended dosage of ibuprofen for a headache? | 0.818         | refused |
+| How do I write a for loop in Rust?                          | 0.814         | refused |
+```
+
+The closest of the five was 0.814 against a 0.6 cutoff — not one of them came
+near passing.
+
+### Real output — criterion 4
+
+Sampled five chunks across the corpus from `chunker.py::split_documents`:
+
+```
+guide_accessibility.md#0     heading=True title=True ends_clean=True
+guide_eating.md#2            heading=True title=True ends_clean=True
+guide_halden_bay.md#4        heading=True title=True ends_clean=True
+guide_pellew_sands.md#4      heading=True title=True ends_clean=True
+guide_walking.md#3           heading=True title=True ends_clean=True
+```
+
+5 of 5 against a target of 4 of 5. I also checked all 84 rather than just the
+sample: no chunk ends mid-sentence and none is missing its heading.
+
+### Real output — criterion 5
+
+"What is the nearest hospital to Halden Bay?" is the test for this, because the
+answer lives in the `## Practical notes` paragraph that is word-for-word
+identical in all nine town guides. Three runs, from
+`run_eval.py::main`:
+
+```
+run 1  Sources retrieved: guide_accessibility.md, guide_halden_bay.md
+       The nearest full hospital to Halden Bay is in Brightwater (guide_halden_bay.md).
+
+run 2  Sources retrieved: guide_accessibility.md, guide_halden_bay.md
+       The nearest full hospital to Halden Bay is in Brightwater (guide_halden_bay.md).
+
+run 3  Sources retrieved: guide_accessibility.md, guide_halden_bay.md
+       The nearest full hospital to Halden Bay is in Brightwater (guide_halden_bay.md).
+```
+
+`guide_halden_bay.md` is in the sources every time, and the answer cites it
+rather than one of the other eight towns carrying the same sentence. 3 of 3
+against a target of 2 of 3.
 
 ## Verdicts
 
