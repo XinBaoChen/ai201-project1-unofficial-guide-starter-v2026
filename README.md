@@ -448,6 +448,84 @@ ambiguity I worked around rather than a criterion I couldn't measure.
 
      Milestone 3. -->
 
+I didn't get any misses. That sounds great until you
+ask why, and the answer is that I set two of the targets too low and one of my
+passes is standing on thinner ice than the table admits.
+
+### The pattern is in my questions, not my failures
+
+There are no failures to find a pattern in, so the pattern is in what I asked.
+All five questions want one stated fact about one named town a closing time, a
+month, a population, a hospital. My corpus puts exactly those facts in one
+sentence under an obvious heading. I basically tested whether my system could
+find things that were trying to be found.
+
+What I never tested is the awkward case: a fact living in two documents at once.
+Brightwater's bus times are in both `guide_brightwater.md` and
+`guide_regional_transport.md`, and they don't quite agree. Nothing in my suite
+would notice if the system blended them into something wrong.
+
+### Criterion 1 — I aimed low
+
+Target 4 of 5, result 5 of 5, distances from 0.179 to 0.386 against a 0.6
+cutoff. Not one of them was close.
+
+Part of that I earned. Merging intro paragraphs into their first section back in
+unit 1 is the only reason the population chunk exists at all — without it this
+would have been 4 of 5. The rest is that I asked easy questions. **Tighten to
+5 of 5**, and swap one question for something spanning two documents, like which
+towns are hard to reach without a car.
+
+### Criterion 1 — the pass I'd defend least
+
+The hospital question is answered by the `## Practical notes` paragraph, which
+is identical in all nine town guides. Including `guide_brightwater.md`, which
+helpfully informs you that Brightwater's nearest hospital is Brightwater.
+
+So the chunk does contain a sentence answering my question — it just isn't a
+sentence anyone wrote *about Halden Bay*. It's boilerplate that happens to be
+right. I scored it a pass because the criterion asks whether the chunk contains
+the answer, and it does. Score it a no and I'm at 4 of 5: still MET, much less
+smug. The stage is **loading**, not retrieval — the corpus ships duplicated text
+and my pipeline treats nine copies as nine facts.
+
+### Criterion 5 — right answer, wrong reason
+
+I wrote this one expecting to lose. Nine near-identical chunks, pick the correct
+town. It went 3 for 3.
+
+The reason is the town name my chunker puts on every chunk. The question says
+"Halden Bay" and only one of the nine copies says it back. So criterion 5 never
+tested disambiguation — it tested whether my unit 1 chunking fix worked, and it
+did. **Tighten to 3 of 3** and ask a question that names no town, so the title
+line can't bail me out.
+
+### Criterion 2 — fine criterion, bad instinct
+
+Passed 15 of 15. But the same question gave me three different citation formats
+across three runs:
+
+```
+run 1: ... stops entirely on Sundays (guide_brightwater.md).
+run 2: ... stops entirely on Sundays.
+
+       Source: guide_brightwater.md
+
+run 3: ... stops entirely on Sundays (*guide_brightwater.md*).
+```
+
+Same question, same chunks, nothing changed. All three pass, because my
+criterion only asks that a source is named. But a `scorer.py` looking for one
+exact format would have failed two of them, and I'd have spent Milestone 4
+hunting a generation bug that was never there. The criterion was measurable. My
+plan for measuring it automatically was not.
+
+### Criteria 3 and 4 — leave them
+
+Both deterministic, both with room to spare: nearest out-of-scope question at
+0.814 against a 0.6 cutoff, and 84 of 84 chunks ending on real punctuation with
+their headings intact. Tightening either teaches me nothing.
+
 ## The Improvement
 
 **What I changed:**
