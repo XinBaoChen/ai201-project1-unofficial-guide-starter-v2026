@@ -400,11 +400,33 @@ against a target of 2 of 3.
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Retrieved chunk contains the answer | MET | I read all fifteen answers and checked each fact against its source file. Every one was present in a chunk that came back, so 5 of 5 against a target of 4 of 5. Nothing was close enough to argue about. |
+| 2 | Every answer names a source | MET | I counted filenames in all fifteen answers and every one named at least one. I scored the citation written inside the answer text, not the `Sources retrieved:` line the program prints by itself — that line appears no matter what, and counting it would have made this criterion impossible to fail. |
+| 3 | Gate stops out-of-corpus questions | MET | `run_eval.py::check_out_of_scope` refused 5 of 5. The closest out-of-scope question scored 0.814 against a 0.6 cutoff, so none of them were near the line. |
+| 4 | Chunks hold one complete section | MET | I sampled five chunks and checked each for a `##` heading, a title line, and an ending on real punctuation. 5 of 5. I then checked all 84 rather than trust a sample of five, and none of them ends mid-sentence. |
+| 5 | Sources name the town I asked about | MET | The hospital question is the test for this, because its answer is the paragraph repeated word-for-word across all nine town guides. `guide_halden_bay.md` was in the sources and cited in the answer on all three runs, so 3 of 3 against a target of 2 of 3. |
+
+**The number that surprised me** was criterion 5 going 3 for 3. I wrote that
+criterion expecting it to fail — nine chunks carrying an identical paragraph,
+and the system has to pick the right one. It never got it wrong. Reading the
+output, the reason is the town name my chunker puts at the top of every chunk:
+the question asks about Halden Bay and only one of the nine copies has
+`Halden Bay` on it.
+
+**Where I nearly read the numbers generously:** criterion 2. My first instinct
+was to look at the `Sources retrieved:` line, which is right there in the output
+and present on every single answer. Scored that way this criterion is a
+formality — it passes even if the model says nothing about where its answer came
+from. I scored the in-answer citation instead, which is the thing the criterion
+was actually meant to be about. It still passed 15 out of 15, but it passed for
+a reason rather than by construction.
+
+I am not revising any criterion. All five were measurable as written, and I
+checked each one the same way three times. The one I would have considered
+revising is criterion 2, since "names at least one source document" doesn't say
+*which* of the two source lines counts — but I was able to resolve that by
+choosing the stricter reading and applying it consistently, which makes it an
+ambiguity I worked around rather than a criterion I couldn't measure.
 
 ## Diagnoses
 
