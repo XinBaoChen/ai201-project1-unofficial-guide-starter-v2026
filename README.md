@@ -249,6 +249,34 @@ I asked Claude to help me justify criterion 3's target, and it pointed out that 
 **2.**
 I asked Claude to construct the chunking code from my notes, keeping the town name at the top and creating one chunk for each `##` part. It worked, but when I performed the "what question could this chunk answer" exercise on the output, I discovered ten chunks that were simply headless intro paragraphs, and one of them (`guide_accessibility.md#0`) was just a preamble with no answers in it. Claude's version had a 60-character minimum that was too low to catch them, and its suggestion was to either raise that to 200 or leave them and call it a known limitation. I didn't like either: raising it would have deleted `guide_halden_bay.md#0`, which is the only chunk holding the population figure one of my own test questions asks for. So I had it merge each intro into the document's first section instead. That took me from 94 chunks to 84, removed all ten headless chunks, and cost me nothing except a longer maximum chunk (760 to 885 characters). I re-indexed and re-measured my distances afterwards, which is why the numbers above differ from my first run.
 
+**3. (unit 2)**
+Everything passed, which left me nothing to diagnose, so I pasted my five
+questions and my three runs into Claude and asked what the results had in
+common. It found the pattern faster than I wanted it to: all five of my
+questions ask for one stated fact about one named town, which is the one shape
+my corpus is built to answer. I had tested whether my system could find things
+that were trying very hard to be found.
+
+It also argued against my own verdict when I asked it to. Criterion 1 passed on
+the hospital question, but the chunk answering it is the boilerplate repeated in
+all nine town guides, including the copy in `guide_brightwater.md` that
+confidently reports Brightwater's nearest hospital as Brightwater. I kept the
+pass, since my criterion asks whether the chunk contains the answer and it does,
+but that argument is what pointed me at the loading stage and became my whole
+Milestone 4 change.
+
+**4. (unit 2)**
+I had Claude write `strip_shared_boilerplate` for that change, and its first
+version was too eager. It counted any paragraph appearing in three or more
+documents as boilerplate, which is also a fair description of `## Getting
+there`. Every heading in the corpus went in the bin. The chunk count gave it
+away immediately, falling from 84 to 30 with a longest chunk of 2105 characters,
+because the chunker had nothing left to split on. The fix was to skip anything
+starting with `#` or shorter than 80 characters, which is now
+`ingest.py::_prose_blocks`. The lesson I am taking is that the summary line
+printed after indexing is worth reading every single time, since it caught a
+silent bug in about two seconds.
+
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
@@ -607,9 +635,66 @@ rewrite that criterion before running another unit against it.
 
      Milestone 5. -->
 
+No criterion is still missed. All five passed before my fix and all five passed
+after, so this section is about what is broken anyway.
+
+**Criterion 5 is now a formality.** It tests what happens when a fact is
+repeated word for word across guides, and my Milestone 4 change deleted the only
+repeated fact in the corpus. It passes because there is nothing left to get
+wrong. I would rewrite it around a question that names no town at all, so the
+title line on each chunk cannot rescue it. I stopped short of doing that here
+because changing a criterion after seeing the results is how you end up grading
+your own homework, and the rules say a criterion I missed stays where it is.
+
+**My test questions are too easy.** Five questions, five single facts, five
+named towns. Nothing I ask requires stitching two documents together, which is
+the thing my corpus is genuinely awkward about. Brightwater's bus times live in
+both `guide_brightwater.md` and `guide_regional_transport.md` and they do not
+quite agree, and my suite would happily watch the system blend them into
+nonsense. The fix is new questions, not new code, which is why it waits for the
+next unit.
+
+**I still have no scorer.** Every number in both run logs came from me reading
+fifteen answers and deciding. Three runs of the same question gave me three
+different citation formats, so a naive string match would have scored two of
+them wrong, and I would rather have no scorer than a confidently wrong one. What
+I would build is a scorer that checks for the filename anywhere in the answer
+and ignores how it was dressed up.
+
+**The corpus contradicts itself and nothing catches it.** Nine guides said the
+nearest hospital is Brightwater, `guide_accessibility.md` says it is Marchwood.
+My fix chose the better source by accident of paragraph frequency rather than by
+any judgement about which document is authoritative. A second contradiction
+worded differently in every file would sail straight through. Detecting that
+properly is a bigger project than this unit, so I am writing it down rather than
+fixing it.
+
 ## What I'd Do Differently
 
 <!-- Knowing what you know now — which of your five criteria would you write
      differently, and why?
 
      Milestone 5. -->
+
+**Criterion 2 is the one I would rewrite.** "Every answer names at least one
+source document" sounds airtight until you notice my program prints a
+`Sources retrieved:` line on every answer by itself. Scored against that line,
+the criterion cannot fail, and I nearly scored it that way. Next time I would
+write it as: the answer text itself names a file, in any format. Same standard,
+no loophole, and it says which of the two lines counts.
+
+**Criterion 1 needs a number that means something.** I wrote 4 of 5 expecting
+one hard question and got 5 of 5 twice over, with the worst distance at 0.386
+against a 0.6 cutoff. A target you clear by that margin is a participation
+trophy. I would write 5 of 5 and make one question genuinely hard on purpose.
+
+**Criterion 5 measured my chunker, not my system.** It was supposed to catch the
+system citing the wrong town among nine identical chunks. It never got the
+chance, because the town name I paste on top of every chunk makes the nine
+trivially different. The criterion was fine as a sentence; it just tested
+something I had already fixed.
+
+The wider lesson is that four of my five criteria were easy to measure and easy
+to pass, and the one thing I genuinely learned this unit came from reading the
+answer text, not from the table. Next time I would write at least one criterion
+about whether an answer is right rather than whether it is well formed.
