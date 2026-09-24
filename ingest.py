@@ -7,6 +7,7 @@ it happened in. This is the first one.
 """
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +41,59 @@ def clean_text(raw: str) -> str:
     return text.strip()
 
 
+# Unit 2 improvement. A paragraph repeated identically across this many
+# documents is boilerplate, not a fact about any one of them.
+BOILERPLATE_THRESHOLD = 3
+
+
+def _prose_blocks(text: str) -> list[str]:
+    """
+    The paragraphs of a document that could be boilerplate.
+
+    Headings are excluded on purpose. "## Getting there" appears in all nine
+    town guides too, and it is repeated because the guides share a structure,
+    not because they share content — stripping headings would leave the chunker
+    with nothing to split on.
+    """
+    blocks = []
+    for raw in text.split("\n\n"):
+        block = raw.strip()
+        if not block or block.startswith("#") or len(block) < 80:
+            continue
+        blocks.append(block)
+    return blocks
+
+
+def strip_shared_boilerplate(documents: list[Document]) -> list[Document]:
+    """
+    Remove paragraphs that appear word-for-word in several documents.
+
+    `city_guides` ends all nine town guides with an identical "Practical notes"
+    paragraph about cash, phone signal and the hospital. Loaded as-is, my
+    pipeline treats nine copies of one sentence as nine separate facts about
+    nine different towns — and one of them tells you Brightwater's nearest
+    hospital is Brightwater.
+
+    This is the cleaning step `clean_text` describes but does not do: repeated
+    boilerplate coming out at the loading stage, before anything is chunked.
+    """
+    counts: Counter[str] = Counter()
+    for doc in documents:
+        # A set, so a paragraph repeated inside one document only counts once.
+        counts.update({p for p in _prose_blocks(doc.text)})
+
+    boilerplate = {p for p, n in counts.items() if n >= BOILERPLATE_THRESHOLD}
+    if not boilerplate:
+        return documents
+
+    cleaned: list[Document] = []
+    for doc in documents:
+        kept = [p for p in doc.text.split("\n\n") if p.strip() not in boilerplate]
+        cleaned.append(Document(source=doc.source, text="\n\n".join(kept).strip()))
+
+    return cleaned
+
+
 def load_documents(corpus: str | None = None) -> list[Document]:
     """
     Read every .txt and .md file in the corpus folder.
@@ -67,7 +121,7 @@ def load_documents(corpus: str | None = None) -> list[Document]:
     if not documents:
         raise ValueError(f"{folder} has no .txt or .md files in it.")
 
-    return documents
+    return strip_shared_boilerplate(documents)
 
 
 def describe(documents: list[Document]) -> str:

@@ -528,34 +528,74 @@ their headings intact. Tightening either teaches me nothing.
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** I added `ingest.py::strip_shared_boilerplate`, which drops
+any paragraph that appears word-for-word in three or more documents before
+anything gets chunked. One change, at the loading stage.
 
-**Why I picked it:**
+**Why I picked it:** My diagnosis named exactly one system fault — the corpus
+repeats an identical "Practical notes" paragraph in all nine town guides, so my
+pipeline was treating one sentence as nine separate facts about nine different
+towns.
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
+The other options on offer didn't fit. Hybrid search helps when questions carry
+names and numbers that semantic search misses, but my worst distance was 0.386
+against a 0.6 cutoff — retrieval was never the thing struggling. A second
+chunking strategy would have been re-doing unit 1's work. Neither connects to
+anything I actually diagnosed.
+
+Effect on the corpus: 84 chunks down to 75. The nine repeated paragraphs
+disappear, their now-empty `## Practical notes` sections fall below my
+60-character minimum and get dropped, and nothing else moves — chunk sizes stay
+at 190 to 885 characters, and all 75 still carry a heading.
 
 ### Run Log — After
 
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
+Evidence: `results/run_2026-09-23_1914_after.md`, produced by `run_eval.py::main`.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 4. Chunks hold one complete section | 4 of 5 | 5/5 | 5/5 | 5/5 | MET |
+| 5. Sources name the town I asked about | 2 of 3 | pass | pass | pass | MET |
+
+Side by side with before, every cell is identical. The distances didn't move
+either — 0.281, 0.343, 0.179, 0.386, 0.347, the same five numbers to three
+decimal places.
 
 **Did it help?**
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
+By the numbers, no. Nothing moved. Every criterion passed before and passed
+after, at the same rate, at the same distances. If the run log were all I had,
+I would have to write this change off as useless.
 
-     Milestone 4. -->
+It isn't, and the reason is in the answer text rather than the table. Here is
+the hospital question before and after:
+
+```
+before:  The nearest full hospital to Halden Bay is in Brightwater (guide_halden_bay.md).
+after:   The nearest full hospital is in Marchwood. Source: guide_accessibility.md
+```
+
+Those disagree, and the corpus disagrees with itself. The boilerplate says
+Brightwater. `guide_accessibility.md` — the one document actually written about
+this — says the nearest full hospital is in Marchwood, that Brightwater has a
+hospital, and that Halden Bay has a minor injuries unit. So before the change my
+system was answering from nine copies of a generic sentence and ignoring the
+document that had thought about the question. After the change it uses the real
+one.
+
+My run log couldn't see that, because criterion 1 only asks whether a retrieved
+chunk contains the answer, and the string "Brightwater" is in both. This is the
+same blind spot I wrote up in my diagnosis of criterion 2: the criterion is
+measurable, and what it measures is not quite what I care about.
+
+**What it cost me:** criterion 5 no longer has anything to test. It asks what
+happens when a fact appears word-for-word in several guides, and I have just
+removed the only case of that in my corpus. It still reads as a pass, but it is
+passing vacuously now. That is the honest price of this change, and I would
+rewrite that criterion before running another unit against it.
 
 ## What's Still Broken
 
